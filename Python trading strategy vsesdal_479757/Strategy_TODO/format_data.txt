@@ -1,0 +1,19 @@
+0.Moment of time
+1.Best Buy Price
+2.Best Sell Price
+3.Quantity available on Best Buy Price
+4.Quantity available on Best Sell Price
+5.Quantity available for 2nd Best Buy Price
+6.Quantity available for 3rd Best Buy Price
+7.Quantity available for 4th Best Buy Price
+8.Quantity available for 5th Best Buy Price
+9.Quantity available for 2nd Best Sell Price
+10.Quantity available for 3rd Best Sell Price
+11.Quantity available for 4th Best Sell Price
+12.Quantity available for 5th Best Sell Price
+
+
+
+
+
+
