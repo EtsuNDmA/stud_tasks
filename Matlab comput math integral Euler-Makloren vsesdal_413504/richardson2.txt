@@ -1,0 +1,36 @@
+function [int, aposter] = richardson2(func,limits,tolerance)
+% Вычисляет интеграл от func с пределами limits
+% постоянно уменьшая шаг и уточняя результат
+% пока не достигнет точности tolerance
+% Пример запуска:
+% >> [int, aposter] = richardson1('sin(x)',[0 pi])
+    N=2; % Начальное число интервалов
+    p=2; % Порядок метода трапеций
+    aposter=inf;
+    while aposter>tolerance
+        h=(limits(2)-limits(1))/N;
+        X=limits(1):h:limits(2);
+        for i=1:length(X)
+            x=X(i);
+            f(i)=eval(func);
+        end;
+        int_h=h*(0.5*f(1)+0.5*f(N+1)+sum(f(2:N)));
+
+        % Формула трапеций с шагом в 2 раза чаще
+        N=N*2;
+        h=(limits(2)-limits(1))/N;
+        X=limits(1):h:limits(2);
+        for i=1:length(X)
+            x=X(i);
+            f(i)=eval(func);
+        end;
+        int_05h=h*(0.5*f(1)+0.5*f(N+1)+sum(f(2:N)));
+        
+        aposter=(int_05h-int_h)/(2^p-1);
+        int=int_05h+aposter;
+        fprintf('\nВеличина шага =%d\n',h)
+        fprintf('Значение интеграла =%d\n',int)
+        fprintf('Оценка точности =%d\n',aposter)
+    end
+end
+
