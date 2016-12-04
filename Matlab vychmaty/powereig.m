@@ -12,12 +12,15 @@ function [eigval, eigvect] = powereig(A, eps, maxiter)
 end
 
 function [eigval, eigvect] = powereigmax(A, eps, maxiter)
+    % A - квадратна€ матрица
+    % eps - точность
+    % maxiter - ќграничение на число итераций
     % ¬ыберем случайный начальный вектор
     eigvect(1:size(A,1),1) = randn(size(A,1),1);
     for i=1:maxiter
         % –ассчитываем следующую итерацию дл€ собственного вектора
         eigvect_new = A*eigvect;
-        % –ассчитываем слудующее приближение к собственному значению
+        % –ассчитываем слtдующее приближение к собственному значению
         eigval_new = eigvect_new(1,1)/eigvect(1,1);
         if i>1
             % ѕровер€ем условие останова

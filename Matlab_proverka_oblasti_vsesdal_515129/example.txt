@@ -1,0 +1,25 @@
+Пример работы функции
+
+>> area = check_area([1 1])
+
+area =
+
+     2
+
+>> area = check_area([2 -2])
+
+area =
+
+     3
+
+>> area = check_area([6 0])
+
+area =
+
+     4
+
+>> area = check_area([0 6])
+
+area =
+
+     1
