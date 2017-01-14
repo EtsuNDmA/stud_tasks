@@ -49,7 +49,7 @@ function f=plotsys(N_zv,param,verbose)
     title(ax,['ЛАЧХ и ЛФЧХ, для разных ',verbose]);
     grid(ax,'on');
     
-    fname = [pwd, '\img\', regexprep(['bode ',verbose],'[\\]',''),'.png'];
+    fname = [pwd, '\img\', regexprep(['bode ',verbose],'[\\]',''),' ',num2str(N_zv),'.png'];
     set(f_bode,'PaperPositionMode','auto')
     saveas(f_bode,fname)
     
@@ -58,7 +58,7 @@ function f=plotsys(N_zv,param,verbose)
     title(hAxes(2),['АФХ ,для разных ',verbose]);
     grid(hAxes(2),'on');
     
-    fname = [pwd, '\img\', regexprep(['nyq ',verbose],'[\\]',''),'.png'];
+    fname = [pwd, '\img\', regexprep(['nyq ',verbose],'[\\]',''),' ',num2str(N_zv),'.png'];
     set(f_nyq,'PaperPositionMode','auto')
     saveas(f_nyq,fname)
     
@@ -67,7 +67,7 @@ function f=plotsys(N_zv,param,verbose)
     title(hAxes(2),['Весовая функция w(t), для разных ',verbose]);
     grid(hAxes(2),'on');
     
-    fname = [pwd, '\img\', regexprep(['imp ',verbose],'[\\]',''),'.png'];
+    fname = [pwd, '\img\', regexprep(['imp ',verbose],'[\\]',''),' ',num2str(N_zv),'.png'];
     set(f_imp,'PaperPositionMode','auto')
     saveas(f_imp,fname)
     
@@ -76,7 +76,7 @@ function f=plotsys(N_zv,param,verbose)
     title(hAxes(2),['Переходная функция h(t), для разных ',verbose]);
     grid(hAxes(2),'on');
     
-    fname = [pwd, '\img\', regexprep(['step ',verbose],'[\\]',''),'.png'];
+    fname = [pwd, '\img\', regexprep(['step ',verbose],'[\\]',''),' ',num2str(N_zv),'.png'];
     set(f_step,'PaperPositionMode','auto')
     saveas(f_step,fname)
     
