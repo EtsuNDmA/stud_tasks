@@ -130,12 +130,12 @@ if __name__ == '__main__':
     beta = [-0.5, 0]
     gamma = np.array([2, 1])
     # Численное решение
-    elements = 15
+    elements = 3
     x, y = solve(p, q, f, alpha, beta, gamma, elements)
 
-    # Точное решение
-    x_exact = np.linspace(a, b, num=elements + 1)
-    y_exact = 1.61517 + (1. - 0.117744*np.exp(x_exact**2/2))*x - 1.11517*x_exact**2 + (-0.14757 + 0.14757*x_exact**2)*erfi(x_exact/np.sqrt(2))
+    # Точное решение полученное с помощью wolframalpha.com
+    x_exact = np.linspace(a, b, num=20)
+    y_exact = 1.61517 + (1. - 0.117744*np.exp(x_exact**2/2))*x_exact - 1.11517*x_exact**2 + (-0.14757 + 0.14757*x_exact**2)*erfi(x_exact/np.sqrt(2))
 
     # Строим графики
     marker = '.' if elements < 20 else None

@@ -59,8 +59,8 @@ if __name__ == '__main__':
     x, y = solve(p, q, f, alpha, beta, gamma, steps)
 
     # Точное решение полученное с помощью wolframalpha.com
-    x_exact = np.linspace(a, b, num=steps + 1)
-    y_exact = 1.61517 + (1. - 0.117744*np.exp(x_exact**2/2))*x - 1.11517*x_exact**2 + (-0.14757 + 0.14757*x_exact**2)*erfi(x_exact/np.sqrt(2))
+    x_exact = np.linspace(a, b, num=20)
+    y_exact = 1.61517 + (1. - 0.117744*np.exp(x_exact**2/2))*x_exact - 1.11517*x_exact**2 + (-0.14757 + 0.14757*x_exact**2)*erfi(x_exact/np.sqrt(2))
 
     # Строим графики
     marker = '.' if steps < 20 else None
