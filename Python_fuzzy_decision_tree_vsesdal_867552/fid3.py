@@ -9,7 +9,41 @@ def unique(array):
     mask = counts != 0
     return np.nonzero(mask)[0], counts[mask]
 
+    
+def get_depth_first_nodes(root):
+    nodes = []
+    stack = [root]
+    m_stack = d
+    while stack:
+        cur_node = stack[0]
+        stack = stack[1:]
+        nodes.append(cur_node)        
+        for child in cur_node.get_rev_children():
+            stack.insert(0, child)
+    return nodes
 
+
+class Node(object):
+    def __init__(self, attribute, C=None):
+        self.attribute = attribute
+        self.C = C
+        self.children = []
+        
+    def __repr__(self):
+        return "Node: [%s]" % self.attribute
+    
+    def add_child(self, node):
+        self.children.append(node) 
+    
+    def get_children(self):
+        return self.children         
+    
+    def get_rev_children(self):
+        children = self.children[:]
+        children.reverse()
+        return children      
+    
+    
 class FuzzyID3Classifier:
     def __init__(self, control_threshold=0.85, decision_threshold=0.02, attribute_columns=None, memberships=None, tree=None):
         self.control_threshold = control_threshold
@@ -32,8 +66,8 @@ class FuzzyID3Classifier:
         classes, _ = unique(y)
 
         col = self.attribute_columns[attribute]
-        MF = np.hstack([func(X[:, col]) for func in self.memberships[attribute]])
-
+        membership_functions = self.memberships[attribute]
+        MF = np.hstack([func(X[:, col].reshape((X.shape[0], 1))) for func in membership_functions])
         S = np.sum(MF, axis=0)
 
         Sc = np.zeros((classes.shape[0], MF.shape[1]))
@@ -72,6 +106,17 @@ class FuzzyID3Classifier:
     def predict(self, X):
         if not self._fitted:
             raise RuntimeError('You must call "fit" method before prediction')
+        
+        stack = [tree.root]
+        
+        
+        for leaf in self.tree.leafs:
+            cur_node = leaf.parent
+            if cur_node.membership is None:
+                attribute = cur_node.attribute
+                col = self.attribute_columns[attribute]
+                cur_node.membership = np.hstack([m_func(X[col]) for m_func in self.memberships[attribute]])
+        
 
 
 if __name__ == '__main__':
@@ -110,86 +155,84 @@ if __name__ == '__main__':
     y = np.array([0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0])
 
     def t_cool(x):
-        if x < 0:
-            return 1
-        elif x <= 15:
-            return 1 - x/15
+        if x < 15:
+            return 1.0
         else:
-            return 0
+            return 0.0
 
     def t_mild(x):
         if x < 5:
-            return 0
+            return 0.0
         elif x < 20:
             return x/15 - 1/3
         elif x < 30:
-            return 1
+            return 1.0
         elif x < 35:
             return -x/5 + 7
         else:
-            return 0
+            return 0.0
 
     def t_hot(x):
         if x < 25:
-            return 0
+            return 0.0
         elif x <= 35:
             return x/10 - 2.5
         else:
-            return 1
+            return 1.0
 
     def w_weak(x):
         if x < 3:
-            return 1
+            return 1.0
         elif x <= 5:
             return 2.5 - x/2
         else:
-            return 0
+            return 0.0
 
     def w_strong(x):
         if x < 3:
-            return 0
+            return 0.0
         elif x <= 8:
             return x/5 - 0.6
         else:
-            return 1
+            return 1.0
 
     def tj_short(x):
         if x < 3:
-            return 1
+            return 1.0
         elif x <= 9:
             return 1.5 - x/6
         else:
-            return 0
+            return 0.0
 
     def tj_long(x):
         if x < 5:
-            return 0
+            return 0.0
         elif x <= 15:
             return x/10 - 0.5
         else:
-            return 1
+            return 1.0
 
-    t_cool = np.vectorize(t_cool)
-    t_mild = np.vectorize(t_mild)
     t_hot = np.vectorize(t_hot)
-
+    t_mild = np.vectorize(t_mild)
+    t_cool = np.vectorize(t_cool)
+    
     w_weak = np.vectorize(w_weak)
     w_strong = np.vectorize(w_strong)
 
     tj_short = np.vectorize(tj_short)
     tj_long = np.vectorize(tj_long)
 
-    memberships = {'temperature': [t_cool, t_mild, t_hot],
+    memberships = {'temperature': [t_hot, t_mild, t_cool],
                    'wind': [w_weak, w_strong],
                    'traffic': [tj_short, tj_long]}
     attribute_columns = {'temperature': 0,
                          'wind': 1,
-                         'traffic': 3}
+                         'traffic': 2}
 
     clf = FuzzyID3Classifier()
 
     clf.fit(X, y, attribute_columns, memberships)
 
-    print(clf._information_gain(X, y, 'temperature'))
-    print(clf._information_gain(X, y, 'wind'))
-    print(clf._information_gain(X, y, 'traffic'))
+    print('Gt', clf._information_gain(X, y, 'temperature'))
+    print('Gw', clf._information_gain(X, y, 'wind'))
+    print('Gtj', clf._information_gain(X, y, 'traffic'))
