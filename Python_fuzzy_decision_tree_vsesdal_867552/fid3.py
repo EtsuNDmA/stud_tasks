@@ -5,10 +5,11 @@ from itertools import count
 from copy import deepcopy
 
 
-def pprint(tree, level=0):
-    print("--" * level + repr(tree) + "\n")
+def pprint(tree, level=0, file=None):
+    """Рекурсивная распечатка дерева в глубину"""
+    print("--" * level + repr(tree) + "\n", file=file)
     for child in tree.children:
-        pprint(child, (level + 1))
+        pprint(child, (level + 1), file=file)
     return None
 
 
@@ -29,9 +30,9 @@ class Node(object):
 
     def __repr__(self):
         if self.children:
-            return "{}-->N{}-{}-{}".format(self.f_attribute or "Root", self.id, self.attribute, self.m)
+            return "{}-->N{}-{}".format(self.f_attribute or "Root", self.id, self.attribute)
         else:
-            return "{}-->N{}-({:.2f}, {:.2f})-{:.4f}".format(self.f_attribute, self.id,  self.C[0], self.C[1], self.m,)
+            return "{}-->N{}-C({:.2f}, {:.2f})".format(self.f_attribute, self.id,  self.C[0], self.C[1])
 
     def add_child(self, node):
         node.id = next(c)
@@ -51,16 +52,16 @@ class Node(object):
 
 
 class FuzzyID3Classifier:
-    def __init__(self, control_threshold=0.85, decision_threshold=0.02, classes=None, attribute_columns=None, memberships=None, tree=None):
+    def __init__(self, control_threshold=0.85, decision_threshold=0.02):
         self.control_threshold = control_threshold
         self.decision_threshold = decision_threshold
-        self.attribute_columns = deepcopy(attribute_columns)
-        self._attribute_columns = deepcopy(attribute_columns)
-        self.memberships = memberships
-        self.tree = tree
-        self.classes = classes
-        self._fitted = False
+        self.fuzzy_attributes = None
+        self.tree = None
+        self.classes = None
+        self._attribute_columns = None
+        
         self._train_len = None
+        self._fitted = False
 
     def _entropy(self, y):
         """Вычисляет энтропию для y"""
@@ -73,9 +74,9 @@ class FuzzyID3Classifier:
 
     def _fuzzy_entropy(self, X, y, attribute):
         """Вычисляет энтропию для каждого столбца из X по классам из y"""
-        col = self.attribute_columns[attribute]
-        membership_functions = self.memberships[attribute]
-        MF = np.hstack([func(X[:, col].reshape((X.shape[0], 1))) for func in membership_functions])
+        col = self.fuzzy_attributes[attribute]['column']
+        m_funcs = self.fuzzy_attributes[attribute]['functions']
+        MF = np.hstack([func(X[:, col].reshape((X.shape[0], 1))) for func in m_funcs])
         S = np.sum(MF, axis=0)
 
         Sc = np.zeros((len(self.classes), MF.shape[1]))
@@ -117,12 +118,13 @@ class FuzzyID3Classifier:
         node.attribute = attribute
 
         col = self._attribute_columns[attribute]
-        membership_functions = self.memberships[attribute]
-        M = np.hstack([func(node.X[:, col].reshape((node.X.shape[0], 1))) for func in membership_functions])
-        for m_func, M_col in zip(membership_functions, M.T):
+        m_funcs = self.fuzzy_attributes[attribute]['functions']
+        names = self.fuzzy_attributes[attribute]['names']
+        M = np.hstack([func(node.X[:, col].reshape((node.X.shape[0], 1))) for func in m_funcs])
+        for m_func, f_attribute, M_col in zip(m_funcs, names, M.T):
             X = node.X[M_col > 0, :]
             y = node.y[M_col > 0]
-            node.add_child(Node(X, y, f_attribute=m_func.pyfunc.__name__, classes=self.classes))
+            node.add_child(Node(X, y, f_attribute=f_attribute, classes=self.classes))
         self._attribute_columns.pop(attribute)
         return node.children
 
@@ -135,11 +137,10 @@ class FuzzyID3Classifier:
             if not self._stop(cur_node):
                 queue.extend(self._expand_tree(cur_node))
 
-    def fit(self, X, y, attribute_columns, memberships, classes):
+    def fit(self, X, y, fuzzy_attributes, classes):
         self._train_len = X.shape[0]
-        self.attribute_columns = deepcopy(attribute_columns)
-        self._attribute_columns = deepcopy(attribute_columns)
-        self.memberships = memberships
+        self._attribute_columns = deepcopy({k: v['column'] for k, v in fuzzy_attributes.items()})
+        self.fuzzy_attributes = fuzzy_attributes
         self.classes = classes
 
         self._build_tree(X, y)
@@ -152,11 +153,12 @@ class FuzzyID3Classifier:
 
         CM = np.zeros((n_labels, n_labels))
         for yp, yt in zip(y_pred, y_true):
-            CM[yt, yp] += 1
+            CM[int(yt), int(yp)] += 1
 
         return CM
 
     def score(self, y_pred, y):
+        """Возвращает метрики качества precision и recall"""
         CM = self.confusion_matrix(y_pred, y)
 
         precision = CM[0, 0] / (np.sum(CM[:, 0])+tol)
@@ -179,9 +181,9 @@ class FuzzyID3Classifier:
             cur_node_children = cur_node.get_rev_children()
             if cur_node_children:
                 attribute = cur_node.attribute
-                col = self.attribute_columns[attribute]
+                col = self.fuzzy_attributes[attribute]['column']
                 for i, child in enumerate(cur_node.children):
-                    m_func = self.memberships[attribute][i]
+                    m_func = self.fuzzy_attributes[attribute]['functions'][i]
                     child.m = cur_node.m * m_func(X[col])
                     stack.append(child)
             else:
@@ -190,6 +192,7 @@ class FuzzyID3Classifier:
 
 
 def train_test_split(X, y, test_size=0.33):
+    """Разделяет данные на тренировочные и тестовые"""
     assert 0 < test_size < 1
     assert X.shape[0] == y.shape[0]
     indexes = range(X.shape[0])
@@ -199,24 +202,13 @@ def train_test_split(X, y, test_size=0.33):
 
 
 if __name__ == '__main__':
-    X = np.array(
-        [[32, 3, 7.5],
-         [33, 4.5, 6.8],
-         [30, 2.5, 8.3],
-         [24, 1.5, 9],
-         [3, 2.5, 3.8],
-         [1, 5, 4.2],
-         [8, 4, 2.7],
-         [12, 3, 6.7],
-         [-5, 2, 3.5],
-         [12, 2.5, 4.1],
-         [15, 6, 2.3],
-         [22, 5, 7.3],
-         [32, 2.5, 2.6],
-         [25, 4, 10.3]],
-    )
-    y = np.array([0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0])
-
+    
+    # Загрузим датасет, исключив 1 строку
+    dataset = np.loadtxt('input.csv', delimiter=",", skiprows=1)
+    X = dataset[:, :-1]
+    y = dataset[:, -1].astype(int)
+    
+    # Создадим функции для вычисления нечтких аргументов
     def t_cool(x):
         if x < 15:
             return 1.0
@@ -224,7 +216,6 @@ if __name__ == '__main__':
             return 0.0
 
     def t_mild(x):
-
         if x < 5:
             return 0.0
         elif x < 20:
@@ -285,34 +276,43 @@ if __name__ == '__main__':
 
     tj_short = np.vectorize(tj_short)
     tj_long = np.vectorize(tj_long)
-    memberships = {'temperature': [t_hot, t_mild, t_cool],
-                   'wind': [w_weak, w_strong],
-                   'traffic': [tj_long, tj_short]}
-    attribute_columns = {'temperature': 0,
-                         'wind': 1,
-                         'traffic': 2}
-
-
-    memberships = {'temperature': [t_hot, t_cool],
-                   'wind': [w_weak, w_strong]}
-    attribute_columns = {'temperature': 0,
-                         'wind': 1}
+    
+    fuzzy_attributes = {
+        'temperature': {
+            'functions': [t_hot, t_mild, t_cool],
+            'names': ['hot', 'mild', 'cool'],
+            'column': 0,
+        },                      
+        'wind': {
+            'functions': [w_weak, w_strong],
+            'names': ['weak', 'strong'],
+            'column': 1,
+        },
+        'traffic': {
+            'functions': [tj_long, tj_short],
+            'names': ['tj_long', 'tj_short'],
+            'column': 2,
+        },
+    }
     classes = [0, 1]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-    clf = FuzzyID3Classifier(control_threshold=0.85, decision_threshold=0.05)
-
-    clf.fit(X_train, y_train, attribute_columns, memberships, classes)
-    pprint(clf.tree)
-    print(clf.predict(X_test))
-    print()
-    pprint(clf.tree)
-
+    
+    # Разделим датасет
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4)
+    
+    # Создадим и обучим классификатор
+    clf = FuzzyID3Classifier(control_threshold=0.85, decision_threshold=0.02)
+    clf.fit(X_train, y_train, fuzzy_attributes, classes)
+    
+    # Распечатаем дерево в файл
+    with open('out_tree.txt', 'w') as f:
+        pprint(clf.tree, file=f)
+    
     c_memb = clf.predict(X_test)
-    print("class membership:\n{}".format(c_memb))
     y_pred = np.argmax(c_memb, axis=1)
-
-    print("X_test:\n{}".format(X_test))
-    print("CM:\n{}".format(clf.confusion_matrix(y_pred, y_test)))
-    print("Prediction:\n{}\nTrue:\n{}".format(y_pred, y_test))
-    print(clf.score(y_pred, y_test))
+    
+    with open('out_result.txt', 'w') as f:
+        print("Class memberships for classes {}\n{}".format(classes, c_memb), file=f)
+        print("X_test:\n{}".format(X_test), file=f)
+        print("Prediction:\n{}\nTrue:\n{}".format(y_pred, y_test), file=f)
+        print("Confusion matrix:\n{}".format(clf.confusion_matrix(y_pred, y_test)), file=f)
+        print("Precision: {:.2f}\nRecal:{:.2f}".format(*clf.score(y_pred, y_test)), file=f)
