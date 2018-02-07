@@ -1,16 +1,16 @@
 Root-->N0-wind
 
---weak-->N1-C(0.00, 1.00)
+--weak-->N1-traffic
 
---strong-->N2-temperature
+----tj_long-->N3-temperature
 
-----hot-->N3-C(1.00, 0.00)
+------hot-->N5-C(0.50, 0.50)
 
-----mild-->N4-traffic
+------mild-->N6-C(0.50, 0.50)
 
-------tj_long-->N6-C(1.00, 0.00)
+------cool-->N7-C(1.00, 0.00)
 
-------tj_short-->N7-C(0.00, 1.00)
+----tj_short-->N4-C(0.29, 0.71)
 
-----cool-->N5-C(0.00, 0.00)
+--strong-->N2-C(1.00, 0.00)
 

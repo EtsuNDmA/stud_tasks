@@ -1,0 +1,18 @@
+Root-->N0-petal_width
+
+--short-->N1-petal_length
+
+----short-->N3-sepal_length
+
+------short-->N5-sepal_width
+
+--------short-->N7-C(0.58, 0.42)
+
+--------long-->N8-C(0.61, 0.39)
+
+------long-->N6-C(0.17, 0.83)
+
+----long-->N4-C(0.00, 1.00)
+
+--long-->N2-C(0.02, 0.55)
+

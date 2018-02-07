@@ -35,16 +35,19 @@ class Node(object):
             return "{}-->N{}-C({:.2f}, {:.2f})".format(self.f_attribute, self.id,  self.C[0], self.C[1])
 
     def add_child(self, node):
+        """Добавляет дочерний узел"""
         node.id = next(c)
         self.children.append(node)
 
     def get_rev_children(self):
+        """Возвращает дочерние узлы в обратном порядке"""
         children = self.children[:]
         children.reverse()
         return children
 
     @property
     def C(self):
+        """Подсчитывает вес классов в текущем узле"""
         counts = np.zeros(len(self.classes))
         for i, cl in enumerate(self.classes):
             counts[i] = self.y[self.y == cl].size
@@ -73,7 +76,7 @@ class FuzzyID3Classifier:
         return np.sum(-P * np.log2(P+tol))
 
     def _fuzzy_entropy(self, X, y, attribute):
-        """Вычисляет энтропию для каждого столбца из X по классам из y"""
+        """Вычисляет нечеткую энтропию для каждого столбца из X по классам из y"""
         col = self.fuzzy_attributes[attribute]['column']
         m_funcs = self.fuzzy_attributes[attribute]['functions']
         MF = np.hstack([func(X[:, col].reshape((X.shape[0], 1))) for func in m_funcs])
@@ -87,12 +90,14 @@ class FuzzyID3Classifier:
         return np.sum(-Pc * np.log2(Pc+tol), axis=0), Sc, np.sum(S)
 
     def _information_gain(self, X, y, attribute):
+        """Вычисляет прибавку информации"""
         Hfs, Sc, S = self._fuzzy_entropy(X, y, attribute)
         Sv = np.sum(Sc, axis=0)
         Hf = self._entropy(y)
         return Hf - np.sum(Sv / S * Hfs)
 
     def _stop(self, node):
+        """Решает, нужно ли остановить разбиение дерева"""
         if node.X.shape[1] == 0:
             return True
         if node.X.shape[0] < self.decision_threshold * self._train_len:
@@ -102,6 +107,10 @@ class FuzzyID3Classifier:
         return False
 
     def _get_max_attr(self, node):
+        """
+        Возвращает аттрибут с максимальной прибавкой информации
+        т.е. аттрибут, по которому будем разбивать текущий узел дерева
+        """
         max_attr = None
         max_attr_gain = 0
         for attribute in self._attribute_columns.keys():
@@ -112,6 +121,7 @@ class FuzzyID3Classifier:
         return max_attr
 
     def _expand_tree(self, node):
+        """Разбивает дерево в указанном узле"""
         attribute = self._get_max_attr(node)
         if attribute is None:
             return []
@@ -129,6 +139,7 @@ class FuzzyID3Classifier:
         return node.children
 
     def _build_tree(self, X, y):
+        """Строит нечеткое решающее дерево"""
         self.tree = Node(X, y, classes=self.classes)
         queue = deque()
         queue.append(self.tree)
@@ -138,6 +149,7 @@ class FuzzyID3Classifier:
                 queue.extend(self._expand_tree(cur_node))
 
     def fit(self, X, y, fuzzy_attributes, classes):
+        """Обучает решающее дерево"""
         self._train_len = X.shape[0]
         self._attribute_columns = deepcopy({k: v['column'] for k, v in fuzzy_attributes.items()})
         self.fuzzy_attributes = fuzzy_attributes
@@ -149,6 +161,7 @@ class FuzzyID3Classifier:
         return self
 
     def confusion_matrix(self, y_pred, y_true):
+        """Вычисляет матрицу ошибок"""
         n_labels = len(self.classes)
 
         CM = np.zeros((n_labels, n_labels))
@@ -160,13 +173,17 @@ class FuzzyID3Classifier:
     def score(self, y_pred, y):
         """Возвращает метрики качества precision и recall"""
         CM = self.confusion_matrix(y_pred, y)
-
-        precision = CM[0, 0] / (np.sum(CM[:, 0])+tol)
-        recall = CM[0, 0] / (np.sum(CM[0, :]) + tol)
+        
+        precision = np.zeros(CM.shape[0])
+        recall = np.zeros(CM.shape[0])
+        for i in range(CM.shape[0]):
+            precision[i] = CM[i, i] / (np.sum(CM[:, i])+tol)
+            recall[i] = CM[i, i] / (np.sum(CM[i, :]) + tol)
 
         return precision, recall
 
     def predict(self, X):
+        """По обученному дереву делает предсказание класса"""
         if not self._fitted:
             raise RuntimeError('You must call "fit" method before prediction')
 
@@ -266,7 +283,9 @@ if __name__ == '__main__':
             return x/10 - 0.5
         else:
             return 1.0
-
+    
+    # Векторизуем функции, чтобы они могли работать сразу с массивами
+    # в качестве входных аргументов
     t_hot = np.vectorize(t_hot)
     t_mild = np.vectorize(t_mild)
     t_cool = np.vectorize(t_cool)
@@ -307,12 +326,21 @@ if __name__ == '__main__':
     with open('out_tree.txt', 'w') as f:
         pprint(clf.tree, file=f)
     
+    # Предсказанные классов
     c_memb = clf.predict(X_test)
+    # Предсказанные классы
     y_pred = np.argmax(c_memb, axis=1)
-    
+    # Матрица ошибок
+    confusion_matrix = clf.confusion_matrix(y_pred, y_test)
+    # Метрики precision и recall
+    precision, recall = clf.score(y_pred, y_test)
+    # Печатаем результаты в файл
     with open('out_result.txt', 'w') as f:
         print("Class memberships for classes {}\n{}".format(classes, c_memb), file=f)
+        print("Test dataset contains {} members".format(X_test.shape[0]), file=f)
         print("X_test:\n{}".format(X_test), file=f)
         print("Prediction:\n{}\nTrue:\n{}".format(y_pred, y_test), file=f)
-        print("Confusion matrix:\n{}".format(clf.confusion_matrix(y_pred, y_test)), file=f)
-        print("Precision: {:.2f}\nRecal:{:.2f}".format(*clf.score(y_pred, y_test)), file=f)
+        print("Confusion matrix:\n{}".format(confusion_matrix), file=f)
+        print("Correctly classified {:.0f}/{} samples".format(np.trace(confusion_matrix), X_test.shape[0]), file=f)
+        print("Precision: ["+" ".join(['{:.2f}'.format(i) for i in precision])+"]", file=f)
+        print("Recall: ["+" ".join(['{:.2f}'.format(i) for i in recall])+"]", file=f)
