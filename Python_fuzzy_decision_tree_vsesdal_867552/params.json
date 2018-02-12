@@ -1,0 +1,20 @@
+{
+    "classes": [0, 1],
+    "attributes": {
+        "temperature": {
+            "params": [[25.0, 35.0], [5.0, 20.0, 30.0, 35.0], [15.000001, 15]],
+            "names": ["hot", "mild", "cool"],
+            "column": 0
+        },
+        "wind": {
+            "params": [[5.0, 3.0], [3.0, 8.0]],
+            "names": ["weak", "strong"],
+            "column": 1
+        },
+        "traffic": {
+            "params": [[5.0, 15.0], [9.0, 3.0]],
+            "names": ["tj_long", "tj_short"],
+            "column": 2
+        }
+    }
+}

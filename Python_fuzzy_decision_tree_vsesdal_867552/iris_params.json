@@ -1,0 +1,25 @@
+{
+    "classes": ["Iris-setosa", "Iris-versicolor", "Iris-virginica"],
+    "attributes": {
+        "sepal_length": {
+            "params": [[6.5, 5.5], [5.5, 6.5]],
+            "names": ["short", "long"],
+            "column": 0
+        },
+        "sepal_width": {
+            "params": [[4.0, 2.0], [2.0, 4.0]],
+            "names": ["short", "long"],
+            "column": 1
+        },
+        "petal_length": {
+            "params": [[5.0, 3.0], [3.0, 5.0]],
+            "names": ["short","long"],
+            "column": 2
+        },
+        "petal_width": {
+            "params": [[1.5, 0.5], [0.5, 1.5]],
+            "names": ["short","long"],
+            "column": 3
+        }
+    }
+}
