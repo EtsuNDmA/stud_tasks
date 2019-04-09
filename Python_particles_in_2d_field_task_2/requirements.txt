@@ -1,0 +1,6 @@
+scipy
+matplotlib
+basemap-data-hires
+pyproj
+jupyter
+ffmpeg
