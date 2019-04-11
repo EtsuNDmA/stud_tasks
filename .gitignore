@@ -1,6 +1,7 @@
-*/*.log
-*/.ipynb_checkpoints
+*.pyc
+*.log
+**/.ipynb_checkpoints
 */send
-.idea
-*/.idea
+/**/__pycache__
+**/.idea
 **/*.asv

@@ -9,7 +9,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from particles.utils import expand_types
 
-logger = logging.getLogger('main')
+logger = logging.getLogger('main.%s' % __name__)
 logger.setLevel(logging.DEBUG)
 
 
@@ -50,7 +50,9 @@ def save_animation(filename, lonlat, current_velocity, states, point_types, num_
     lines = []
     colors = expand_types(point_types).color
     for point_ind in range(states.shape[1]):
-        color = colors.iloc[point_ind]
+        logger.debug('Рисуем частицу %s / %s', point_ind, states.shape[1])
+        color = list(colors.iloc[point_ind])
+        color[3] = 0.6  # прозрачность
         lines.append(ax.plot([], [], color=color, linestyle='', marker='o')[0])
 
     # инициализация линий для анимации
@@ -61,10 +63,14 @@ def save_animation(filename, lonlat, current_velocity, states, point_types, num_
 
     # обновлении линий на каждой итерации
     def update(frame):
+        logger.debug('Рисуем кадр %s / %s', frame, states.shape[0])
         ax.set_title('{}, час'.format(frame * step // 3600))
 
         for point_ind, line in enumerate(lines):
             x, y = states[frame, point_ind, :2]
+            if np.isinf(x) or np.isinf(y):
+                x = np.nan
+                y = np.nan
             line.set_data(x, y)
         return lines
 
